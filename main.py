@@ -1,9 +1,9 @@
 import requests
 import re
 import os
-import json
 import time
 
+# The TOKEN environment variable is the Github Personal Access Token
 auth_token = os.getenv("TOKEN")
 query = "q=stars:>=100 is:public topic:helm"
 headers = {
@@ -15,7 +15,7 @@ endpoint = f"https://api.github.com/search/repositories?{query}&sort=stars&order
 
 
 while True:
-    print(f">{endpoint}")
+    print(f"-> {endpoint}")
     r = requests.get(endpoint, headers=headers)
 
     rheaders = r.headers
@@ -30,16 +30,18 @@ while True:
     if not has_next:
         break
 
-    print(rate_reset - time.time())
     # Parsing Data
     # example response object: https://api.github.com/repos/matevip/matecloud
     # git_url, html_url may be of interest
     # contrib = [rsp["contributors_url"] for rsp in data] Not sure if the number of contributors is of interest since we filtered by stars
 
     data = r.json()["items"]
-    repo_urls = [rsp["html_url"] for rsp in data]
+    repo_urls = ["".join([rsp["html_url"], "\n"]) for rsp in data]
 
-    # print(repo_urls)
+    # Write to file
+
+    with open("out.txt", "a+") as f:
+        f.writelines(repo_urls)
 
     # change to next endpoint
     links = link_header.split(",")
