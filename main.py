@@ -1,55 +1,63 @@
-import requests
-import re
 import os
-import time
-
-# The TOKEN environment variable is the Github Personal Access Token
-auth_token = os.getenv("TOKEN")
-query = "q=stars:>=100 is:public topic:helm"
-headers = {
-    "Accept": "application/vnd.github+json",
-    "Authorization": f"Bearer {auth_token}",
-    "X-GitHub-Api-Version": "2022-11-28",
-}
-endpoint = f"https://api.github.com/search/repositories?{query}&sort=stars&order=desc&per_page=100&page=1"
+import signal
+import sys
+from github import Github
+from github import Auth
+from github.GithubException import UnknownObjectException
+from helper import write_checkpoint, read_checkpoint, save_repo, audit_repo
 
 
-while True:
-    print(f"-> {endpoint}")
-    r = requests.get(endpoint, headers=headers)
+auth = Auth.Token(os.getenv("TOKEN"))
 
-    rheaders = r.headers
+# Public Web Github
+g = Github(auth=auth)
 
-    rate_limit = int(rheaders["X-RateLimit-Limit"])
-    remaining_limit = int(rheaders["X-RateLimit-Remaining"])
-    rate_reset = int(rheaders["X-RateLimit-Reset"])
-    link_header = rheaders["Link"]
+# Init Variables
+checkpoint = read_checkpoint()
+minimum_stars = 100
 
-    has_next = "next" in link_header
+k8_files = [
+    "charts",
+    "k8s",
+    "manifests",
+    "namespace.yaml",
+    "deployment.yaml",
+    "service.yaml",
+]
 
-    if not has_next:
-        break
 
-    # Parsing Data
-    # example response object: https://api.github.com/repos/matevip/matecloud
-    # git_url, html_url may be of interest
-    # contrib = [rsp["contributors_url"] for rsp in data] Not sure if the number of contributors is of interest since we filtered by stars
+repos = g.get_repos(since=checkpoint)
 
-    data = r.json()["items"]
-    repo_urls = ["".join([rsp["html_url"], "\n"]) for rsp in data]
 
-    # Write to file
+def signal_handler(sig, frame):
+    write_checkpoint(checkpoint)
+    sys.exit(0)
 
-    with open("out.txt", "a+") as f:
-        f.writelines(repo_urls)
 
-    # change to next endpoint
-    links = link_header.split(",")
-    for link in links:
-        if "next" in link:
-            url = re.search(r"<(.+)>", link).group(1)
-            endpoint = url
-            break
+signal.signal(signal.SIGINT, signal_handler)
 
-    if remaining_limit == 0:
-        time.sleep(int(rate_reset - time.time()) + 1)
+for repo in repos:
+    repo_id = repo.id
+    repo_url = repo.html_url
+    checkpoint = repo_id
+    print(g.get_rate_limit())
+    try:
+        if repo.size and repo.stargazers_count >= minimum_stars:
+            print(f"> ⭐ {repo_id} {repo_url}")
+            audit_repo(repo_url)
+            try:
+                files = repo.get_git_tree("main", True).tree
+            except UnknownObjectException:
+                files = repo.get_git_tree("master", True).tree
+
+            if any(file.path in k8_files for file in files):
+                print(f"> ✅ {repo_id} {repo_url}")
+                save_repo(repo_url)
+                continue
+
+    except Exception:
+        # This is a catch all for repositories who has been deleted or has been removed because it violated Github's TOS
+        write_checkpoint(checkpoint)
+
+# To close connections after use
+g.close()
