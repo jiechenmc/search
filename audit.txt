@@ -1,0 +1,4 @@
+https://github.com/andelf/Defines-Swift
+https://github.com/rho-devel/rho
+https://github.com/adafruit/Adafruit_Python_DHT
+https://github.com/ueberauth/oauth2
