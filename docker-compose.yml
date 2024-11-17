@@ -1,0 +1,9 @@
+services:
+  script:
+    build: .
+    tty: true
+    volumes:
+      - ./tmp:/app/tmp
+      - ./data:/app/data
+    env_file:
+      - .env
