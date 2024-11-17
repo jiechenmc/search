@@ -30,7 +30,7 @@ checkpoint = read_checkpoint(1)
 
 def search_repos(worker_id: int):
     global checkpoint
-    repos = g.get_repos(since=checkpoint + (5000 * (worker_id - 1)))
+    repos = g.get_repos(since=checkpoint * worker_id)
 
     def signal_handler(sig, frame):
         write_checkpoint(checkpoint, worker_id)
