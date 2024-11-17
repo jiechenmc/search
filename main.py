@@ -52,10 +52,13 @@ def search_repos(worker_id: int):
                 except UnknownObjectException:
                     files = repo.get_git_tree("master", True).tree
 
-                if any(file.path in k8_files for file in files):
-                    print(f"> ✅ {repo_id} {repo_url}")
-                    save_repo(repo_url)
-                    continue
+                for file in files:
+                    if any(
+                        target_filename in file.path for target_filename in k8_files
+                    ):
+                        print(f"> ✅ {repo_id} {repo_url}")
+                        save_repo(repo_url)
+                        break
 
         except Exception:
             # This is a catch all for repositories who has been deleted or has been removed because it violated Github's TOS
