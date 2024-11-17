@@ -1,10 +1,11 @@
 import os
-import signal
 import sys
+import signal
 from github import Github
 from github import Auth
 from github.GithubException import UnknownObjectException
 from helper import write_checkpoint, read_checkpoint, save_repo, audit_repo
+from multiprocessing import Process
 
 
 auth = Auth.Token(os.getenv("TOKEN"))
@@ -13,7 +14,6 @@ auth = Auth.Token(os.getenv("TOKEN"))
 g = Github(auth=auth)
 
 # Init Variables
-checkpoint = read_checkpoint()
 minimum_stars = 100
 
 k8_files = [
@@ -25,39 +25,53 @@ k8_files = [
     "service.yaml",
 ]
 
-
-repos = g.get_repos(since=checkpoint)
-
-
-def signal_handler(sig, frame):
-    write_checkpoint(checkpoint)
-    sys.exit(0)
+checkpoint = read_checkpoint(1)
 
 
-signal.signal(signal.SIGINT, signal_handler)
+def search_repos(worker_id: int):
+    global checkpoint
+    repos = g.get_repos(since=checkpoint + (5000 * (worker_id - 1)))
 
-for repo in repos:
-    repo_id = repo.id
-    repo_url = repo.html_url
-    checkpoint = repo_id
-    print(g.get_rate_limit())
-    try:
-        if repo.size and repo.stargazers_count >= minimum_stars:
-            print(f"> ⭐ {repo_id} {repo_url}")
-            audit_repo(repo_url)
-            try:
-                files = repo.get_git_tree("main", True).tree
-            except UnknownObjectException:
-                files = repo.get_git_tree("master", True).tree
+    def signal_handler(sig, frame):
+        write_checkpoint(checkpoint, worker_id)
+        sys.exit(0)
 
-            if any(file.path in k8_files for file in files):
-                print(f"> ✅ {repo_id} {repo_url}")
-                save_repo(repo_url)
-                continue
+    signal.signal(signal.SIGINT, signal_handler)
 
-    except Exception:
-        # This is a catch all for repositories who has been deleted or has been removed because it violated Github's TOS
-        write_checkpoint(checkpoint)
+    for repo in repos:
+        repo_id = repo.id
+        repo_url = repo.html_url
+        checkpoint = repo_id
+        print(g.get_rate_limit())
+        try:
+            if repo.size and repo.stargazers_count >= minimum_stars:
+                print(f"> ⭐ {repo_id} {repo_url}")
+                audit_repo(repo_url)
+                try:
+                    files = repo.get_git_tree("main", True).tree
+                except UnknownObjectException:
+                    files = repo.get_git_tree("master", True).tree
+
+                if any(file.path in k8_files for file in files):
+                    print(f"> ✅ {repo_id} {repo_url}")
+                    save_repo(repo_url)
+                    continue
+
+        except Exception:
+            # This is a catch all for repositories who has been deleted or has been removed because it violated Github's TOS
+            write_checkpoint(checkpoint, worker_id)
+
+
+if __name__ == "__main__":
+    processes = []
+
+    for i in range(1, 11):  # Create 5 processes
+        process = Process(target=search_repos, args=(i,))
+        processes.append(process)
+        process.start()
+
+    for process in processes:
+        process.join()  # Wait for all processes to complete
 
 # To close connections after use
 g.close()

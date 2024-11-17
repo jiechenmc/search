@@ -1,5 +1,5 @@
 def write_checkpoint(checkpoint_id: int, worker: int):
-    print(f"0 | Writing | {checkpoint_id} -> {f"checkpoint-{worker}.txt"}")
+    print(f"0 | Writing | {checkpoint_id} -> {worker}")
     with open(f"checkpoint-{worker}.txt", "w") as f:
         f.write(str(checkpoint_id))
 
