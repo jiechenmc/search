@@ -1,15 +1,12 @@
-checkpoint_path = "checkpoint.txt"
-
-
-def write_checkpoint(checkpoint_id):
-    print(f"0 | Writing | {checkpoint_id} -> {checkpoint_path}")
-    with open(checkpoint_path, "w") as f:
+def write_checkpoint(checkpoint_id: int, worker: int):
+    print(f"0 | Writing | {checkpoint_id} -> {f"checkpoint-{worker}.txt"}")
+    with open(f"checkpoint-{worker}.txt", "w") as f:
         f.write(str(checkpoint_id))
 
 
-def read_checkpoint():
+def read_checkpoint(worker: int):
     try:
-        with open(checkpoint_path, "r") as f:
+        with open(f"checkpoint-{worker}.txt", "r") as f:
             checkpoint = int(f.read())
             return checkpoint
     except Exception:
