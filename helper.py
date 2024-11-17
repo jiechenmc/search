@@ -10,7 +10,7 @@ def read_checkpoint(worker: int):
             checkpoint = int(f.read())
             return checkpoint
     except Exception:
-        return 20580498  # This is the id for the kubernetes repository
+        return 43723161  # This is the id for the helm repository
 
 
 def save_repo(url):
