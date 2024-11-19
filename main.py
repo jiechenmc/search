@@ -17,12 +17,7 @@ g = Github(auth=auth)
 minimum_stars = 100
 
 k8_files = [
-    "charts",
-    "k8s",
-    "manifests",
-    "namespace.yaml",
-    "deployment.yaml",
-    "service.yaml",
+    "Chart.yaml",
 ]
 
 checkpoint = read_checkpoint(1)
@@ -46,7 +41,7 @@ def search_repos(worker_id: int):
         try:
             if repo.size and repo.stargazers_count >= minimum_stars:
                 print(f"> ⭐ {repo_id} {repo_url}")
-                audit_repo(repo_url)
+                # audit_repo(repo_url)
                 try:
                     files = repo.get_git_tree("main", True).tree
                 except UnknownObjectException:
