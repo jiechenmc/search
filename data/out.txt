@@ -1,15 +1,4 @@
-https://github.com/DanWahlin/DockerAndKubernetesCourseCode
 https://github.com/dragonflydb/dragonfly
-https://github.com/BeanstalkFarms/Beanstalk
 https://github.com/druid-io/druid-operator
-https://github.com/webextensions/live-css-editor
-https://github.com/fossasia/open-event-frontend
-https://github.com/microsoft/ApplicationInsights-Kubernetes
-https://github.com/thomaslwq/react-admin
 https://github.com/cloudposse/terraform-aws-components
-https://github.com/google/gvisor
-https://github.com/jiyuwu/TemplateCore
-https://github.com/redhat-cop/openshift-toolkit
-https://github.com/OCNYang/QBox
 https://github.com/podtato-head/podtato-head
-https://github.com/google-apis-rs/google-cloud-rs
