@@ -51,7 +51,7 @@ def search_repos(worker_id: int):
                     files = repo.get_git_tree("main", True).tree
                 except UnknownObjectException:
                     files = repo.get_git_tree("master", True).tree
-
+                # Checking if the git tree has any of the k8 related files
                 for file in files:
                     if any(
                         target_filename in file.path for target_filename in k8_files
@@ -68,7 +68,7 @@ def search_repos(worker_id: int):
 if __name__ == "__main__":
     processes = []
 
-    for i in range(1, 11):  # Create 5 processes
+    for i in range(1, 11):  # Create 10 processes
         process = Process(target=search_repos, args=(i,))
         processes.append(process)
         process.start()
